@@ -1,47 +1,55 @@
-import capa_carga_datos as inputs
-from utils.crear_json import Costs_json
-import utils.io as io
-import capa_visualizacion as visualiza
+from lector_archivos.lector_archivos import leer_archivo
 from capa_logica import crear_json_desde_resultados
-import os
+from capa_visualizacion import graficar_listas
+from utils.result_utils import desplazar_seis_unidades_tiempo
+from utils.vector_entrada import json_to_vector_entrada_resultados
 
-print("Directorio de trabajo actual:", os.getcwd())
+datos = leer_archivo("./datos_entrada/datos.json")
 
-############################### MAIN #########################
+### RESULTADOS QUANTICOS ###
+resultados_cuánticos = leer_archivo("./datos_entrada/resultados_cuanticos.json")
 
-#### CURVA DE DEMANDA #####
-C_Demanda = inputs.datos["C"][0]["Consumo"].get("Pot")  # MW/h
-# C_Demanda = [0] + C_Demanda[:-1]
-vector_demanda_expandido_H = [x for elem in C_Demanda for x in [elem] * 6]
+# ##################### RESULTADOS CLASICOS ##########################
 
-#### RESULTADOS SENER GENERADOS
-# visualiza.visualizar_vector_entrada_resultados(inputs.resultados_Sener_desplazados)
-dict_GC = crear_json_desde_resultados(inputs.resultados_Sener_generados_desplazados)
-io.guardar_archivo_json("../outputs", "resultados_C.json", dict_GC)
+resultados_Sener_json = leer_archivo("./datos_entrada/resultados.json")
+
+resultados_Sener_originales_desplazados = desplazar_seis_unidades_tiempo(
+    resultados_Sener_json
+)
+
+vector_oferta_C = resultados_Sener_originales_desplazados["C"][0]["x"]
+
+############ GENERADO CLASICO ################
+resultados_Sener_vector_entrada = json_to_vector_entrada_resultados(
+    resultados_Sener_json
+)
+
+resultados_Sener_generados_desplazados = desplazar_seis_unidades_tiempo(
+    resultados_Sener_vector_entrada
+)
+
+dict_GC = crear_json_desde_resultados(resultados_Sener_generados_desplazados, datos)
+# io.guardar_archivo_json("../outputs", "resultados_C.json", dict_GC)
 
 vector_oferta_GC = dict_GC["C"][0]["x"]
 
-#### RESULTADOS CUÁNTICOS ######
-# visualiza.visualizar_vector_entrada_resultados(inputs.resultados_Iñigo)
-dict_GQ = crear_json_desde_resultados(inputs.resultados_Iñigo)
-io.guardar_archivo_json("../outputs", "resultados_Q.json", dict_GQ)
+### CURVA DE DEMANDA #####
+C_Demanda = datos["C"][0]["Consumo"].get("Pot")  # MW/h
+vector_demanda_timestep = [x for elem in C_Demanda for x in [elem] * 6]
+
+#### RESULTADOS CUÁNTICOS JSON ######
+dict_GQ = crear_json_desde_resultados(list(resultados_cuánticos.values()), datos)
+# io.guardar_archivo_json("../outputs", "resultados_Q.json", dict_GQ)
 
 vector_oferta_GQ = dict_GQ["C"][0]["x"]
-
-##### RESULTADOS SENER LEIDOS ######
-vector_oferta_C = inputs.resultados_Sener_originales_desplazados["C"][0]["x"]
-resultados_sener = [resultado for resultado in inputs.resultados_Sener_json.values()][
-    :-3
-]
-costes_C = Costs_json(resultados_sener)
 
 #### VISUALIZACIÓN ########
 labels = ["Demanda", "GeneradoC", "GeneradoQ", "LeidoC"]
 markers = ["o", "_", "_", "_"]
 
 
-visualiza.graficar_listas(
-    vector_demanda_expandido_H,
+graficar_listas(
+    vector_demanda_timestep,
     vector_oferta_GC,
     vector_oferta_GQ,
     vector_oferta_C,

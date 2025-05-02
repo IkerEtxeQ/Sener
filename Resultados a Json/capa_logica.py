@@ -1,9 +1,8 @@
-import capa_carga_datos as inputs
 import utils.crear_json as crear_json
 
 
-def crear_json_desde_resultados(resultados):
-    datos = inputs.datos
+def crear_json_desde_resultados(resultados, datos):
+    datos = datos
     resultados = resultados
 
     input_curves = resultados[0]

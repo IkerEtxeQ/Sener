@@ -2,6 +2,20 @@ import numpy as np
 import utils.list_utils as list_utils
 
 
+def desplazar_seis_unidades_tiempo(obj):
+    if isinstance(obj, list):
+        # Si es lista de valores simples, modificarla
+        if all(not isinstance(x, (list, dict)) for x in obj):
+            return [0] * 6 + obj[:-6] if len(obj) >= 6 else [0] * 6
+        # Si hay estructuras dentro, recorrerlas recursivamente
+        return [desplazar_seis_unidades_tiempo(item) for item in obj]
+
+    elif isinstance(obj, dict):
+        return {k: desplazar_seis_unidades_tiempo(v) for k, v in obj.items()}
+
+    return obj  # Otros tipos se devuelven tal cual
+
+
 def transference_function(energy_input, data, link=0, verbose=False):
     output = 0.0
     for i in range(len(data["L"][link]["T"]) - 1):
