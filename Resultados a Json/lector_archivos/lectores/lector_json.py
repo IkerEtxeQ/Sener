@@ -1,5 +1,5 @@
 import json
-from lector_archivos.interfaces.ILectorArchivo import ILectorArchivo
+from ..interfaces import ILectorArchivo
 
 
 class LectorJSON(ILectorArchivo):

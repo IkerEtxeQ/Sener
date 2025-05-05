@@ -1,5 +1,5 @@
-from lector_archivos.lectores.lector_json_resultQ import LectorJSONResultQ
-from lector_archivos.lectores.lector_json import LectorJSON
+from .lectores import LectorJSON
+from .lectores import LectorJSONResultQ
 
 
 def leer_archivo(archivo_path):

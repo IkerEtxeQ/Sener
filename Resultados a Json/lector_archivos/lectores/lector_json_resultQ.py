@@ -1,8 +1,8 @@
 import json
-from lector_archivos.interfaces.ILectorArchivo import ILectorArchivo
+from ..interfaces import ILectorArchivo
 
 
-def convertir_subclaves_a_int(diccionario):
+def _convertir_subclaves_a_int(diccionario):
     return {k + 1: v for k, v in enumerate(diccionario.values())}
 
 
@@ -26,7 +26,7 @@ class LectorJSONResultQ(ILectorArchivo):
 
             for campo in ["input_curves", "precalentando"]:
                 if campo in datos:
-                    datos[campo] = convertir_subclaves_a_int(datos[campo])
+                    datos[campo] = _convertir_subclaves_a_int(datos[campo])
 
             return datos
         except FileNotFoundError:

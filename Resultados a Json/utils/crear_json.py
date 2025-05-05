@@ -1,10 +1,10 @@
 import utils.result_utils as result_utils
 import utils.list_utils as list_utils
-import capa_visualizacion as visualizar
+import visualizacion as visualizar
 import numpy as np
 
 
-def crear_dict_json(resultados: list) -> dict:
+def __crear_dict_json(resultados: list) -> dict:
     json = {}
     json["G"] = [resultados[0]]
     json["C"] = [resultados[1]]
@@ -18,7 +18,7 @@ def crear_dict_json(resultados: list) -> dict:
     return json
 
 
-def G_json(G_result: list, datos) -> dict:
+def __G_json(G_result: list, datos) -> dict:
     datos_G = datos["G"][0]
 
     ## G: Vector que contiene los resultados de cada Generador existente.
@@ -64,7 +64,7 @@ def G_json(G_result: list, datos) -> dict:
     return G
 
 
-def C_json(input_curves: dict, precalentando: dict, datos) -> dict:
+def __C_json(input_curves: dict, precalentando: dict, datos) -> dict:
     datos_C = datos["C"][0]
 
     ## C: Vector que contiene los resultados de cada Consumidor existente -> Si es consumidor consume H2????
@@ -140,7 +140,7 @@ def C_json(input_curves: dict, precalentando: dict, datos) -> dict:
     return C
 
 
-def A_json(A_result: list, Q_result: list, datos) -> dict:
+def __A_json(A_result: list, Q_result: list, datos) -> dict:
     datos_A = datos["A"][0]
 
     ### Vector que contiene los resultados de cada Almacenamiento existente
@@ -280,7 +280,7 @@ def A_json(A_result: list, Q_result: list, datos) -> dict:
     return A
 
 
-def R_json(R_result: list, datos) -> dict:
+def __R_json(R_result: list, datos) -> dict:
     datos_R = datos["R"][0]
 
     ## R (MWh): Vector que contiene los resultados de cada conexión a Red existente
@@ -429,7 +429,7 @@ def R_json(R_result: list, datos) -> dict:
     return R
 
 
-def L_json(input_curves: dict, precalentando: dict, datos) -> list:
+def __L_json(input_curves: dict, precalentando: dict, datos) -> list:
     ## L: Vector que contiene los resultados de cada Link existente
     # input_curves: Curvas de electricidad consumida por cada uno de los 3 links MW
 
@@ -538,7 +538,7 @@ def L_json(input_curves: dict, precalentando: dict, datos) -> list:
     return L
 
 
-def Time_json() -> dict:
+def __Time_json() -> dict:
     Time_claves = ["N", "dtIni", "IncrT"]
 
     N = 144  # Número de Instantes de Tiempo Simulados
@@ -551,7 +551,7 @@ def Time_json() -> dict:
     return T
 
 
-def Costs_json(resultados: list) -> dict:
+def __Costs_json(resultados: list) -> dict:
     Costs_claves = ["Total"]
 
     Total = 0.0
@@ -570,3 +570,38 @@ def Costs_json(resultados: list) -> dict:
     visualizar.visualizar_costes(Total, costes_por_resultado)
 
     return Costs
+
+
+def crear_json_desde_resultados(resultados, datos):
+    datos = datos
+    resultados = resultados
+
+    input_curves = resultados[0]
+    precalentando = resultados[1]
+    G_result = resultados[2]
+    Q_result = resultados[3]
+    A_result = resultados[4]
+    R_result = resultados[5]
+
+    G = __G_json(G_result, datos)
+
+    C = __C_json(input_curves, precalentando, datos)
+
+    A = __A_json(A_result, Q_result, datos)
+
+    R = __R_json(R_result, datos)
+
+    L = __L_json(input_curves, precalentando, datos)
+
+    resultados = [G, C, A, R, L]
+
+    Costs = __Costs_json(resultados)
+
+    Time = __Time_json()
+
+    resultados.append(Time)
+    resultados.append(Costs)
+
+    dict_json = __crear_dict_json(resultados)
+
+    return dict_json

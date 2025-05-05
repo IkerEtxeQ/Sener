@@ -1,6 +1,6 @@
-from lector_archivos.lector_archivos import leer_archivo
-from capa_logica import crear_json_desde_resultados
-from capa_visualizacion import graficar_listas
+from lector_archivos import leer_archivo
+from utils.crear_json import crear_json_desde_resultados
+from visualizacion import graficar_listas
 from utils.result_utils import desplazar_seis_unidades_tiempo
 from utils.vector_entrada import json_to_vector_entrada_resultados
 
