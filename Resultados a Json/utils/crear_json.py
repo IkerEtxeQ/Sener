@@ -1,6 +1,21 @@
-import utils.result_utils as result_utils
-import utils.list_utils as list_utils
-import visualizacion as visualizar
+from .result_utils import (
+    crear_lista_booleana_todos_valores_mayor_zero_true,
+    crear_lista_booleana_primer_valor_mayor_zero_true,
+    calcular_coste_arranque,
+    calcular_coste_fijo,
+    calcular_coste_variable,
+    calcular_deficit,
+    calcular_exceso,
+    eliminar_energias_precalentamiento,
+    transference_function,
+    sumar_costes_totales,
+    detectar_fin_precalentamiento,
+)
+
+from .list_utils import expandir_vector, identificar_primer_true_de_cadenas_trues
+
+from .visualizacion import visualizar_costes
+
 import numpy as np
 
 
@@ -35,21 +50,21 @@ def __G_json(G_result: list, datos) -> dict:
     ]  # Supongo que es la energia obtenida del generador #Conversión a MW = MWh * 6pasos/1h
 
     # Vector de booleanos que indican si el Generador está produciendo (=True) en cada instante de tiempo
-    g_y = result_utils.crear_lista_booleana_todos_valores_mayor_zero_true(g_x)
+    g_y = crear_lista_booleana_todos_valores_mayor_zero_true(g_x)
 
     # Vector de booleanos que indican si el Generador se arrancó (=True) en cada instante de tiempo
-    g_z = result_utils.crear_lista_booleana_primer_valor_mayor_zero_true(g_y)
+    g_z = crear_lista_booleana_primer_valor_mayor_zero_true(g_y)
 
     # Vector de Costes [EUR] de Arranque en cada instante de tiempo
-    cA = result_utils.calcular_coste_arranque(g_x, datos_G.get("Ca", 0))
+    cA = calcular_coste_arranque(g_x, datos_G.get("Ca", 0))
 
     # Vector de Costes [EUR] Fijos por estar en Producción en cada instante de tiempo
-    cF = result_utils.calcular_coste_fijo(
+    cF = calcular_coste_fijo(
         g_x, datos_G.get("Cf", 0) / 6
     )  # Conversión a EUR = EUR/h (cf) * 1h/6pasos
 
     # Vector de Costes [EUR] Variables en función de la producción en cada instante de tiempo
-    cV = result_utils.calcular_coste_variable(
+    cV = calcular_coste_variable(
         G_result, datos_G.get("Cv", 0)
     )  # Conversión a EUR =  EUR/MWh (cv) * MWh (G_result)
 
@@ -70,13 +85,13 @@ def __C_json(input_curves: dict, precalentando: dict, datos) -> dict:
     ## C: Vector que contiene los resultados de cada Consumidor existente -> Si es consumidor consume H2????
 
     # Quitar energias de precalentamiento
-    input_curves_sin_precalentamiento = result_utils.eliminar_energias_precalentamiento(
+    input_curves_sin_precalentamiento = eliminar_energias_precalentamiento(
         input_curves, precalentando
     )
 
     ## Aplicar función de transferencia
     H2_Transferido = {
-        k: [result_utils.transference_function(x, datos, k - 1) for x in v]
+        k: [transference_function(x, datos, k - 1) for x in v]
         for k, v in input_curves_sin_precalentamiento.items()
     }
     suma_links_h = list(map(sum, zip(*H2_Transferido.values())))  # kg(H2)/h
@@ -90,14 +105,10 @@ def __C_json(input_curves: dict, precalentando: dict, datos) -> dict:
     vector_demanda_expandido = [x / 6 for x in vector_demanda_expandido_H]  # MW (kg)
 
     vector_Cc_d = datos_C["Costes"].get("Cc_d")  # EUR/MWh
-    vector_Cc_d_expandido = list_utils.expandir_vector(
-        vector_Cc_d, 6
-    )  # EUR/MW (EUR/Kg)
+    vector_Cc_d_expandido = expandir_vector(vector_Cc_d, 6)  # EUR/MW (EUR/Kg)
 
     vector_Cc_e = datos_C["Costes"].get("Cc_e")  # EUR/MWh
-    vector_Cc_e_expandido = list_utils.expandir_vector(
-        vector_Cc_e, 6
-    )  # EUR/MW (EUR/Kg)
+    vector_Cc_e_expandido = expandir_vector(vector_Cc_e, 6)  # EUR/MW (EUR/Kg)
 
     ###############
     C_claves = ["x", "d", "e", "y", "cD", "cE", "cTot", "Ereal", "REreal", "name"]
@@ -109,21 +120,21 @@ def __C_json(input_curves: dict, precalentando: dict, datos) -> dict:
     c_x = suma_links_h  # Kg
 
     # Vector de Potencia [MW] Recibida de menos (Déficit) respecto de la Solicitada en cada instante de tiempo
-    c_d = result_utils.calcular_deficit(suma_links_h, vector_demanda_expandido_H)  # Kg
+    c_d = calcular_deficit(suma_links_h, vector_demanda_expandido_H)  # Kg
 
     # Vector de Potencia [MW] Recibida de más (Exceso) respecto de la Solicitada en cada instante de tiempo
-    c_e = result_utils.calcular_exceso(suma_links_h, vector_demanda_expandido_H)  # Kg
+    c_e = calcular_exceso(suma_links_h, vector_demanda_expandido_H)  # Kg
 
     # Vector de booleanos que indican si el Consumidor está consumiendo (=True) en cada instante de tiempo
-    c_y = result_utils.crear_lista_booleana_todos_valores_mayor_zero_true(
+    c_y = crear_lista_booleana_todos_valores_mayor_zero_true(
         suma_links_h
     )  ## Supongo que si producimos H2, se esta consumiendo.
 
     # Vector de Costes [EUR] generados por el Déficit de potencia suministrada respecto a solicitada en cada instante de tiempo
-    c_cD = result_utils.calcular_coste_variable(c_d, vector_Cc_d_expandido)  # EUR
+    c_cD = calcular_coste_variable(c_d, vector_Cc_d_expandido)  # EUR
 
     # Vector de Costes [EUR] generados por el Exceso de potencia suministrada respecto a solicitada en cada instante de tiempo
-    c_cE = result_utils.calcular_coste_variable(c_e, vector_Cc_e_expandido)  # EUR
+    c_cE = calcular_coste_variable(c_e, vector_Cc_e_expandido)  # EUR
 
     # Vector de Costes [EUR] Totales por desvíos en cada instante de tiempo
     c_cTot = [c_cd + c_ce for c_cd, c_ce in zip(c_cD, c_cE)]  # EUR
@@ -195,7 +206,7 @@ def __A_json(A_result: list, Q_result: list, datos) -> dict:
     yC = [x < 0 for x in A_result]
 
     # Vector de booleanos que indican si el Generador?? inició Carga (=True) en cada instante de tiempo
-    zC = list_utils.identificar_primer_true_de_cadenas_trues(
+    zC = identificar_primer_true_de_cadenas_trues(
         yC
     )  # detecta cada vez empieza una carga, no solo la primera
 
@@ -203,38 +214,38 @@ def __A_json(A_result: list, Q_result: list, datos) -> dict:
     yD = [x > 0 for x in A_result]
 
     # Vector de booleanos que indican si el Generador??  inició Carga (=True) en cada instante de tiempo
-    zD = list_utils.identificar_primer_true_de_cadenas_trues(
+    zD = identificar_primer_true_de_cadenas_trues(
         yD
     )  # detecta cada vez empieza una descarga, no solo la primera
 
     # Vector de Costes [EUR] por arrancar/iniciar Carga en cada instante de tiempo
-    cAC = result_utils.calcular_coste_fijo(zC, datos_A.get("CaC", 0))
+    cAC = calcular_coste_fijo(zC, datos_A.get("CaC", 0))
 
     # Vector de Costes [EUR] Fijos por estar en Carga en cada instante de tiempo
-    cFC = result_utils.calcular_coste_fijo(
+    cFC = calcular_coste_fijo(
         xC, datos_A.get("CfC", 0) / 6
     )  # Conversión a EUR = EUR/h (CfC) * 1h/6pasos
 
     # Vector de Costes [EUR] Variables en función de la potencia Cargada en cada instante de tiempo
-    cVC = result_utils.calcular_coste_variable(
+    cVC = calcular_coste_variable(
         xCh, datos_A.get("CvC", 0)
     )  # Conversión a EUR =  EUR/MWh (CvC) * MWh (xCh)
 
     # Vector de Costes [EUR] por arrancar/iniciar Descarga en cada instante de tiempo
-    cAD = result_utils.calcular_coste_fijo(zD, datos_A.get("CaD", 0))
+    cAD = calcular_coste_fijo(zD, datos_A.get("CaD", 0))
 
     # Vector de Costes [EUR] Fijos por estar en Descarga en cada instante de tiempo
-    cFD = result_utils.calcular_coste_fijo(
+    cFD = calcular_coste_fijo(
         xD, datos_A.get("CfD", 0) / 6
     )  # Conversión a EUR = EUR/h (CfC) * 1h/6pasos
 
     # Vector de Costes [EUR] Variables en función de la potencia Descarga en cada instante de tiempo
-    cVD = result_utils.calcular_coste_variable(
+    cVD = calcular_coste_variable(
         xDh, datos_A.get("CvD", 0)
     )  # Conversión a EUR =  EUR/MWh (CvC) * MWh (xDh)
 
     # Vector de Costes/valor [EUR] por mantener un determinado Nivel almacenado en cada instante de tiempo
-    cNm = result_utils.calcular_coste_variable(
+    cNm = calcular_coste_variable(
         aQ, datos_A.get("CaNm", 0)
     )  # not required #Conversión a EUR =  EUR/MW (CaNm) * MW (aQ)
 
@@ -297,16 +308,16 @@ def __R_json(R_result: list, datos) -> dict:
     ]  # MW
 
     vector_Crd_E = datos_R["Costes"].get("CRd_E", 0)  # EUR/MWh
-    vector_Crd_E_expandido = list_utils.expandir_vector(vector_Crd_E, 6)  # EUR/MW
+    vector_Crd_E_expandido = expandir_vector(vector_Crd_E, 6)  # EUR/MW
 
     vector_Ced_E = datos_R["Costes"].get("CRe_E", 0)  # EUR/MWh
-    vector_Ced_E_expandido = list_utils.expandir_vector(vector_Ced_E, 6)  # EUR/MW
+    vector_Ced_E_expandido = expandir_vector(vector_Ced_E, 6)  # EUR/MW
 
     vector_Crd_I = datos_R["Costes"].get("CRd_I", 0)  # EUR/MWh
-    vector_Crd_I_expandido = list_utils.expandir_vector(vector_Crd_I, 6)  # EUR/MW
+    vector_Crd_I_expandido = expandir_vector(vector_Crd_I, 6)  # EUR/MW
 
     vector_Ced_I = datos_R["Costes"].get("CRe_I", 0)  # EUR/MWh
-    vector_Ced_I_expandido = list_utils.expandir_vector(vector_Ced_I, 6)  # EUR/MW
+    vector_Ced_I_expandido = expandir_vector(vector_Ced_I, 6)  # EUR/MW
 
     ######################
     R_claves = [
@@ -341,36 +352,28 @@ def __R_json(R_result: list, datos) -> dict:
     xI = [x * 6 if x > 0 else 0 for x in R_result]  ## MW
 
     # Vector de Potencia [MW] Exportada de menos (Déficit) respecto de la Comprometida, en cada instante de tiempo
-    dE = result_utils.calcular_deficit(
-        xE, vector_potencia_comprometida_exportacion
-    )  # MW
+    dE = calcular_deficit(xE, vector_potencia_comprometida_exportacion)  # MW
 
     # Vector de Potencia [MW] Exportada de más (Exceso) respecto de la Comprometida, en cada instante de tiempo
-    eE = result_utils.calcular_exceso(
-        xE, vector_potencia_comprometida_exportacion
-    )  # MW
+    eE = calcular_exceso(xE, vector_potencia_comprometida_exportacion)  # MW
 
     # Vector de Potencia [MW] Importada de menos (Déficit) respecto de la Comprometida, en cada instante de tiempo
-    dI = result_utils.calcular_deficit(
-        xI, vector_potencia_comprometida_importacion
-    )  # MW
+    dI = calcular_deficit(xI, vector_potencia_comprometida_importacion)  # MW
 
     # Vector de Potencia [MW] Importada de más (Exceso) respecto de la Comprometida, en cada instante de tiempo
-    eI = result_utils.calcular_exceso(
-        xI, vector_potencia_comprometida_importacion
-    )  # MW
+    eI = calcular_exceso(xI, vector_potencia_comprometida_importacion)  # MW
 
     # Vector de booleanos que indican si se está Exportando hacia la Red (=True) en cada instante de tiempo
-    yE = result_utils.crear_lista_booleana_todos_valores_mayor_zero_true(xE)
+    yE = crear_lista_booleana_todos_valores_mayor_zero_true(xE)
 
     # Vector de booleanos que indican si se está Importando desde la Red (=True) en cada instante de tiempo
-    yI = result_utils.crear_lista_booleana_todos_valores_mayor_zero_true(xI)
+    yI = crear_lista_booleana_todos_valores_mayor_zero_true(xI)
 
     ##Vector de Potencia [MW] Importación extra, por encima de la PmaxI/contratada, a la que se ha recurrido en cada instante de tiempo
-    xIextraAvail = result_utils.calcular_exceso(xI, datos_R.get("PmaxI", 0))  # MW
+    xIextraAvail = calcular_exceso(xI, datos_R.get("PmaxI", 0))  # MW
 
     # Vector de Potencia [MW] Importación extra, por encima de la PmaxI/contratada, que se ha consumido en cada instante de tiempo
-    xIextraUsed = result_utils.calcular_exceso(
+    xIextraUsed = calcular_exceso(
         xI, datos_R.get("PmaxI", 0)
     )  ## igual que el anterior??
 
@@ -381,19 +384,19 @@ def __R_json(R_result: list, datos) -> dict:
     xBbajar = []
 
     # Vector de Costes [EUR] generados por el Déficit de potencia Exportada respecto de la comprometida, en cada instante de tiempo
-    cDE = result_utils.calcular_coste_variable(dE, vector_Crd_E_expandido)  ##EUR
+    cDE = calcular_coste_variable(dE, vector_Crd_E_expandido)  ##EUR
 
     # Vector de Costes [EUR] generados por el Exceso de potencia Exportada respecto de la comprometida, en cada instante de tiempo
-    cEE = result_utils.calcular_coste_variable(eE, vector_Ced_E_expandido)  ##EUR
+    cEE = calcular_coste_variable(eE, vector_Ced_E_expandido)  ##EUR
 
     # Vector de Costes [EUR] generados por el Déficit de potencia Importada respecto de la comprometida, en cada instante de tiempo
-    cDI = result_utils.calcular_coste_variable(dI, vector_Crd_I_expandido)  ##EUR
+    cDI = calcular_coste_variable(dI, vector_Crd_I_expandido)  ##EUR
 
     # Vector de Costes [EUR] generados por el Exceso de potencia Importada respecto de la comprometida, en cada instante de tiempo
-    cEI = result_utils.calcular_coste_variable(eI, vector_Ced_I_expandido)  ##EUR
+    cEI = calcular_coste_variable(eI, vector_Ced_I_expandido)  ##EUR
 
     # Vector de Costes [EUR] generados por importar una potencia mayor a la contratada (PmaxI), en cada instante de tiempo
-    cIextra = result_utils.calcular_coste_variable(
+    cIextra = calcular_coste_variable(
         xIextraAvail, vector_Ced_I_expandido
     )  ## not required  ##EUR ## mismo coste que el Exceso de potencia Importada??
 
@@ -435,7 +438,7 @@ def __L_json(input_curves: dict, precalentando: dict, datos) -> list:
 
     ######## VECTORES AUXILIARES ####
     H2_Transferido = {
-        k: [result_utils.transference_function(x, datos, k - 1) for x in v]
+        k: [transference_function(x, datos, k - 1) for x in v]
         for k, v in input_curves.items()
     }  # kg/h
 
@@ -465,58 +468,52 @@ def __L_json(input_curves: dict, precalentando: dict, datos) -> list:
         # name = "Tiner"
 
         # Vector de booleanos que indican si el Link está operando (solo cuando produce) (=True) en cada instante de tiempo
-        y = result_utils.detectar_fin_precalentamiento(
+        y = detectar_fin_precalentamiento(
             precalentando.get(i + 1, {})
         )  # si no esta precalentando esta operando? o puede estar parado y calentado?
 
         # Vector de Potencia [MW] Input al Link en cada instante de tiempo
-        xI = result_utils.eliminar_energias_precalentamiento(
+        xI = eliminar_energias_precalentamiento(
             input_curves.get(i + 1, {}), [not x for x in y]
         )  # MW # Despues del precalentamiento!! (resultado ellos)
 
         # Vector de Potencia [MW] Output del Link en cada instante de tiempo
-        xO = result_utils.eliminar_energias_precalentamiento(
+        xO = eliminar_energias_precalentamiento(
             H2_Transferido.get(i + 1, {}), [not x for x in y]
         )  # MW
 
         # Vector de booleanos que indican si el Link se arrancó (=True) en cada instante de tiempo
-        z = list_utils.identificar_primer_true_de_cadenas_trues(
-            y
-        )  # Despues de precalentar!!
+        z = identificar_primer_true_de_cadenas_trues(y)  # Despues de precalentar!!
 
         # Vector de booleanos que indican si el Link está precalentando (=True) en cada instante de tiempo
         p = precalentando.get(i + 1, {})
 
         # Vector de Potencia [MW] Input del Link consumida para Precalentar en cada instante de tiempo
-        xPI = result_utils.eliminar_energias_precalentamiento(
-            input_curves.get(i + 1, {}), np
-        )  # MW
+        xPI = eliminar_energias_precalentamiento(input_curves.get(i + 1, {}), np)  # MW
 
         # Vector de Potencia [MW] Output del Link consumida para Precalentar en cada instante de tiempo. Tiene sentido coger output para precalentar??
-        xPO = result_utils.eliminar_energias_precalentamiento(
+        xPO = eliminar_energias_precalentamiento(
             H2_Transferido.get(i + 1, {}), np
         )  # Kg(h2)
 
         # Vector de Costes [EUR] de Arranque en cada instante de tiempo
-        cA = result_utils.calcular_coste_arranque(z, datos["L"][i].get("Ca", 0))  # EUR
+        cA = calcular_coste_arranque(z, datos["L"][i].get("Ca", 0))  # EUR
 
         # Vector de Costes [EUR] Fijos por estar en Operación en cada instante de tiempo
-        cF = result_utils.calcular_coste_fijo(y, datos["L"][i].get("Cf", 0) / 6)  # EUR
+        cF = calcular_coste_fijo(y, datos["L"][i].get("Cf", 0) / 6)  # EUR
 
         # Vector de Costes [EUR] Variables en función de la potencia Input en cada instante de tiempo
-        cVI = result_utils.calcular_coste_variable(
+        cVI = calcular_coste_variable(
             xIh, datos["L"][i].get("CvI", 0)
         )  # Conversión a EUR =  EUR/MWh (CvI) * MWh (xIh)
 
         # Vector de Costes [EUR] Variables en función de la potencia Output en cada instante de tiempo
-        cVO = result_utils.calcular_coste_variable(
+        cVO = calcular_coste_variable(
             xOh, datos["L"][i].get("CvO", 0)
         )  # Conversión a EUR =  EUR/MWh (CvO) * MWh (xOh)
 
         # Vector de Costes [EUR] Fijos por estar en Precalentamiento en cada instante de tiempo
-        cFp = result_utils.calcular_coste_fijo(
-            xPI, datos["L"][i].get("CFp", 0) / 6
-        )  # EUR
+        cFp = calcular_coste_fijo(xPI, datos["L"][i].get("CFp", 0) / 6)  # EUR
 
         # Vector de Costes [EUR] Totales en cada instante de tiempo
         cTot = [
@@ -551,23 +548,21 @@ def __Time_json() -> dict:
     return T
 
 
-def __Costs_json(resultados: list) -> dict:
+def Costs_json(resultados: list) -> dict:
     Costs_claves = ["Total"]
 
     Total = 0.0
     costes_por_resultado = {}  # Para guardar los costes individuales por entrada
 
     for nombre, resultado in zip(["G", "C", "A", "R", "L"], resultados):
-        subtotal, individuales = result_utils.sumar_costes_totales(
-            resultado
-        )  # Desempaquetar
+        subtotal, individuales = sumar_costes_totales(resultado)  # Desempaquetar
         Total += subtotal
         costes_por_resultado[nombre] = individuales  # Guardar los individuales por tipo
 
     Costs_valores = [Total]
     Costs = dict(zip(Costs_claves, Costs_valores))
 
-    visualizar.visualizar_costes(Total, costes_por_resultado)
+    visualizar_costes(Total, costes_por_resultado)
 
     return Costs
 
@@ -595,7 +590,7 @@ def crear_json_desde_resultados(resultados, datos):
 
     resultados = [G, C, A, R, L]
 
-    Costs = __Costs_json(resultados)
+    Costs = Costs_json(resultados)
 
     Time = __Time_json()
 

@@ -1,5 +1,10 @@
 import numpy as np
-import utils.list_utils as list_utils
+from .list_utils import (
+    crear_nvector_like,
+    crear_nvector_zeros_like,
+    identificar_primera_posicion_no_zero,
+    identificar_posiciones_nozero,
+)
 
 
 def desplazar_seis_unidades_tiempo(obj):
@@ -47,10 +52,10 @@ def transference_function(energy_input, data, link=0, verbose=False):
 
 
 def crear_lista_booleana_primer_valor_mayor_zero_true(vector: list) -> list:
-    nvector = list_utils.crear_nvector_like(vector)
-    resultado = list_utils.crear_nvector_zeros_like(vector, dtype=bool)
+    nvector = crear_nvector_like(vector)
+    resultado = crear_nvector_zeros_like(vector, dtype=bool)
 
-    primer_indice_no_zero = list_utils.identificar_primera_posicion_no_zero(nvector)
+    primer_indice_no_zero = identificar_primera_posicion_no_zero(nvector)
 
     if primer_indice_no_zero != -1:
         resultado[primer_indice_no_zero] = True
@@ -59,10 +64,10 @@ def crear_lista_booleana_primer_valor_mayor_zero_true(vector: list) -> list:
 
 
 def crear_lista_booleana_todos_valores_mayor_zero_true(vector: list) -> list:
-    nvector = list_utils.crear_nvector_like(vector)
-    resultado = list_utils.crear_nvector_zeros_like(vector, dtype=bool)
+    nvector = crear_nvector_like(vector)
+    resultado = crear_nvector_zeros_like(vector, dtype=bool)
 
-    indices_no_zero = list_utils.identificar_posiciones_nozero(nvector)
+    indices_no_zero = identificar_posiciones_nozero(nvector)
 
     if indices_no_zero.size > 0:
         resultado[indices_no_zero] = True
@@ -71,10 +76,10 @@ def crear_lista_booleana_todos_valores_mayor_zero_true(vector: list) -> list:
 
 
 def calcular_coste_arranque(vector: list, coste: float) -> list:
-    nvector = list_utils.crear_nvector_like(vector)
-    resultado = list_utils.crear_nvector_zeros_like(vector, dtype=float)
+    nvector = crear_nvector_like(vector)
+    resultado = crear_nvector_zeros_like(vector, dtype=float)
 
-    primer_indice_no_zero = list_utils.identificar_primera_posicion_no_zero(nvector)
+    primer_indice_no_zero = identificar_primera_posicion_no_zero(nvector)
 
     if primer_indice_no_zero != -1:
         resultado[primer_indice_no_zero] = coste
@@ -83,10 +88,10 @@ def calcular_coste_arranque(vector: list, coste: float) -> list:
 
 
 def calcular_coste_fijo(vector: list, coste: float) -> list:
-    nvector = list_utils.crear_nvector_like(vector)
-    resultado = list_utils.crear_nvector_zeros_like(vector, dtype=float)
+    nvector = crear_nvector_like(vector)
+    resultado = crear_nvector_zeros_like(vector, dtype=float)
 
-    indices_no_zero = list_utils.identificar_posiciones_nozero(nvector)
+    indices_no_zero = identificar_posiciones_nozero(nvector)
 
     if indices_no_zero.size > 0:
         resultado[indices_no_zero] = coste
@@ -95,14 +100,14 @@ def calcular_coste_fijo(vector: list, coste: float) -> list:
 
 
 def calcular_coste_variable(vector: list, coste: list) -> list:
-    nvector = list_utils.crear_nvector_like(vector)
-    resultado = list_utils.crear_nvector_zeros_like(vector, dtype=float)
+    nvector = crear_nvector_like(vector)
+    resultado = crear_nvector_zeros_like(vector, dtype=float)
     if np.isscalar(coste):
         ncoste = np.full(len(vector), coste)
     else:
-        ncoste = list_utils.crear_nvector_like(coste)
+        ncoste = crear_nvector_like(coste)
 
-    indices_no_zero = list_utils.identificar_posiciones_nozero(nvector)
+    indices_no_zero = identificar_posiciones_nozero(nvector)
 
     if ncoste.shape != nvector.shape:
         raise ValueError(
@@ -116,8 +121,8 @@ def calcular_coste_variable(vector: list, coste: list) -> list:
 
 
 def calcular_deficit(vector_oferta: list, vector_demanda: list) -> list:
-    nvector_oferta = list_utils.crear_nvector_like(vector_oferta)
-    nvector_demanda = list_utils.crear_nvector_like(vector_demanda)
+    nvector_oferta = crear_nvector_like(vector_oferta)
+    nvector_demanda = crear_nvector_like(vector_demanda)
 
     resultado = np.where(
         nvector_demanda > nvector_oferta, nvector_demanda - nvector_oferta, 0.0
@@ -127,8 +132,8 @@ def calcular_deficit(vector_oferta: list, vector_demanda: list) -> list:
 
 
 def calcular_exceso(vector_oferta: list, vector_demanda: list) -> list:
-    nvector_oferta = list_utils.crear_nvector_like(vector_oferta)
-    nvector_demanda = list_utils.crear_nvector_like(vector_demanda)
+    nvector_oferta = crear_nvector_like(vector_oferta)
+    nvector_demanda = crear_nvector_like(vector_demanda)
 
     resultado = np.where(
         nvector_oferta > nvector_demanda, nvector_oferta - nvector_demanda, 0.0
